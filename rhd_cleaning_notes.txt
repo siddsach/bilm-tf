@@ -1,0 +1,12 @@
+Long ellipses: ....
+Long numbers
+New lines
+Dates
+De-identified words
+xxxxxx
+numbers
+numbers with special characters (3+) (50%)
+tokenization of slashes (cm/sec, 135/77 blood pressure
+tokenization of abbreviations for dosages
+
+tokenize before normaliztion
