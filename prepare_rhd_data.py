@@ -1,52 +1,57 @@
-from rkg.restricted.aurora_etl.projects.roam.rhd_100k.organize import \
-    Roam100kRHDCanonicalDataClient
+from rkg.restricted.aurora_etl.projects.roam.rhd_100k.organize import Roam100kRHDCanonicalDataClient
 from nltk.tokenize import sent_tokenize
-from clean_rhd import normalize, str_tokenize
-from csv import writer
+from clean_rhd import normalize, tokenize
+import csv
 import os
+import boto3
 
+print('Loading Data...')
 client = Roam100kRHDCanonicalDataClient()
+s3 = boto3.client
 
-
-folder = ''
+folder = 'data'
 
 output_doc = 0
-sents = []
+sents = ''
 vocab = dict()
+
+print('Preprocessing text...')
 
 for i, ex in enumerate(client.iter_all()):
 
-    if i > 10:
-        break
-    print("BEFORE:")
-    print(ex)
+
     # Cleaning text
-    tokenized_text = str_tokenize(ex['fullText'])
-    normalized_text = normalize(tokenized_text)
-    print("AFTER:")
-    print(ex)
+    normalized_text = normalize(ex['fullText'])
+    processed_sentences = tokenize(normalized_text)
+
+    # Adding data
+    sents += processed_sentences
 
     # Adding words to vocab
     for s in normalized_text.split(' '):
-        if s not in vocab.keys():
-            vocab[s] = 0
-        vocab[s] += 1
+        if s is not '\n':
+            if s not in vocab.keys():
+                vocab[s] = 0
+            vocab[s] += 1
 
-    # Adding data
-    sents += sent_tokenize(normalized_text)
 
-    if (i+1 % 1000) == 0:
+    if (i+1) % 2 == 0:
+        print('Writing...')
         # Write all current data to file and start new file
-        current_file = open(os.path.join(folder, str(output) + '.txt'), 'r')
-        writer = writer(current_file)
-        writer.writerows(sents)
-        sents = []
+        current_file = open(os.path.join(folder, str(output_doc) + '.txt'), 'w')
+        current_file.write(sents)
+        sents = ''
         current_file.close()
         output_doc += 1
+        print('Done.')
 
+import csv
+print('Writing Vocab...')
 # Writing vocab
-vocab = sorted(vocab, lambda k: vocab[k])
-writer(open('vocab.txt', 'w')).writerows(vocab)
+vocab = sorted(vocab.keys(), key=lambda k: vocab[k])
+csv.writer(open('vocab.txt', 'w')).writerows(vocab)
+
+print('Done.')
 
 
 
